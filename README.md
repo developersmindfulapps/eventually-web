@@ -1,169 +1,234 @@
-## EventUally Website
+EventUally Website
 
-Minimal, premium product website for **EventUally** (Next.js App Router + Tailwind), deployed on **Vercel**.
+Minimal, privacy-first, premium product website for EventUally — a group-based event planning app.
+Built with Next.js App Router + Tailwind CSS, deployed on Vercel.
 
-### Pages
+This website serves as:
 
-- `/` Home
-- `/support` Support + FAQ + Support Form
-- `/privacy` Privacy Policy
-- `/terms` Terms of Service
-- `/account-deletion` Account deletion instructions (App Store friendly)
-- `/auth/confirm` and `/auth/error` (email verification redirect pages)
-- `/auth/verified` Email verified redirect target (Supabase)
+The public marketing site
 
-### Tech stack
+Legal & compliance surface (App Store ready)
 
-- Next.js (App Router)
-- React + TypeScript
-- Tailwind CSS (v4 template)
-- Framer Motion (subtle motion)
-- Optional: Resend (email delivery), Supabase (persist support requests)
+Auth transaction pages for Supabase
 
-## Local development
+Support & account management interface
 
-```bash
-cd /Users/sumeetkour/Downloads/eventUally-web
-npm install
-npm run dev
-```
+🌐 Live
 
-Open `http://localhost:3000`.
+https://eventuallyapp.in
 
-### Scripts
+📄 Pages & Routes
+Public pages
 
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-```
+/ — Home
 
-## Support form (frontend + backend)
+/support — Support + FAQ + Support Form
 
-The Support Form on `/support` posts to:
+/privacy — Privacy Policy
 
-- `POST /api/support` → `src/app/api/support/route.ts`
+/terms — Terms of Service
 
-### What it collects (privacy-first)
+/account-deletion — Account deletion instructions (App Store compliant)
 
-- `email` (required)
-- `name` (optional)
-- `message` (required)
-- `company` (honeypot — should remain empty)
+Auth (Supabase redirect & transactional pages)
 
-No IP is stored by this project by default.
+/auth/confirm — Email confirmation redirect
 
-### Delivery options
+/auth/verified — Email verified success screen
 
-You can deliver support requests via **email** (Resend) or **database** (Supabase).
+/auth/reset — Password reset form (from email link)
 
-The API handler supports 3 modes via `SUPPORT_DELIVERY_MODE`:
+/auth/reset/success — Password reset success
 
-- `resend` → send an email
-- `supabase` → insert into a Supabase table
-- unset → auto (prefers Resend if configured, otherwise Supabase)
+/auth/error — Fallback for invalid/expired auth flows
 
-## Environment variables (Vercel)
+API
 
-Set these in **Vercel → Project → Settings → Environment Variables**.
+POST /api/support — Support form backend
 
-### Optional (recommended)
+🧱 Tech Stack
 
-- `NEXT_PUBLIC_SITE_URL` (example: `https://eventually.app`)  
-  Used for correct absolute OpenGraph URLs.
+Next.js (App Router)
 
-### Option A: Resend (email)
+React + TypeScript
 
-- `SUPPORT_DELIVERY_MODE=resend`
-- `RESEND_API_KEY`
-- `SUPPORT_FROM_EMAIL` (example: `EventUally Support <support@your-domain.com>`)
-- `SUPPORT_TO_EMAIL` (the inbox that receives support requests)
+Tailwind CSS (v4 template)
 
-#### Local setup
+Framer Motion (subtle motion & polish)
 
-This repo includes a local template file:
+Supabase (Auth, optional persistence)
 
-- `env.local` → copy to `.env.local` and paste your real `RESEND_API_KEY`
+Resend (Email delivery)
 
-### Option B: Supabase (persist)
+Vercel (Hosting & CI)
 
-- `SUPPORT_DELIVERY_MODE=supabase`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only; never expose to client)
-- `SUPPORT_SUPABASE_TABLE` (optional; default: `support_requests`)
+🛡️ Product Philosophy
 
-#### Suggested Supabase table schema
+EventUally follows a privacy-first, minimalist, compliance-ready design approach:
 
-Create a table (example: `support_requests`) with columns:
+No unnecessary user tracking
 
-- `id` (uuid, primary key, default `gen_random_uuid()`)
-- `created_at` (timestamp, default `now()`)
-- `email` (text, not null)
-- `name` (text, nullable)
-- `message` (text, not null)
-- `source` (text, not null; store `"website"`)
+No IP storage by default
 
-## Security & abuse prevention
+No client-side secrets exposed
 
-- **Honeypot**: `company` blocks basic bots.
-- **Rate limiting**: the API includes a best-effort in-memory throttle (useful locally).  
-  For real rate limiting on Vercel, use a shared store (e.g., Upstash Redis) keyed by an email hash or short-lived fingerprint. Prefer not storing raw IP unless necessary.
-- **No sensitive data leaks**: the API returns generic error messages and logs details server-side.
+All auth handled via Supabase
 
-## Deploy on Vercel
+All legal & account deletion surfaces included
 
-Vercel auto-detects Next.js. Typical flow:
+App Store friendly
 
-1. Push this repo to GitHub
-2. Import in Vercel
-3. Add env vars (if using the Support Form backend)
-4. Deploy
+🧩 Support Form (Frontend + Backend)
 
-## Supabase Auth redirect URLs
+The Support Form on /support posts to:
 
-Add these to **Supabase → Authentication → URL Configuration → Redirect URLs**:
+POST /api/support
 
-- `https://eventuallyapp.in/auth/confirm`
-- `https://eventuallyapp.in/auth/verified`
-- (local dev) `http://localhost:3000/auth/verified`
- - `https://eventuallyapp.in/auth/reset`
- - `https://eventuallyapp.in/auth/reset/success`
- - (local dev) `http://localhost:3000/auth/reset`
- - (local dev) `http://localhost:3000/auth/reset/success`
- - (local dev) `http://localhost:3000/auth/confirm`
 
-### What should redirect here
+Location:
 
-- **Email verification**: after the user confirms their email
-- **Magic link login**: after the user clicks the login link
-- **Password reset**: after the user clicks the reset email link (lands on `/auth/reset`)
-- **Password reset completion**: after they set a new password (redirects to `/auth/reset/success`)
+src/app/api/support/route.ts
 
-This page is intentionally minimal, `noindex`, and only intended for auth flows.
+Data collected (privacy-first)
 
-### Password reset flow (Supabase)
+email (required)
 
-1. User taps “Forgot password?” in the app.
-2. Supabase sends a password reset email.
-3. User clicks the email link.
-4. Supabase redirects to `https://eventuallyapp.in/auth/reset` with tokens in the URL hash (never sent to your server).
-5. The website:
-   - Reads tokens from the hash on the client
-   - Sets a temporary Supabase session
-   - Removes tokens from the address bar immediately
-6. User sets a new password.
-7. On success, the website signs out and redirects to `/auth/reset/success`.
+name (optional)
 
-#### Invalid/expired links
+message (required)
 
-If tokens are missing/invalid/expired, `/auth/reset` shows a safe message (“link is invalid or expired”) and a CTA to Support, without exposing token details.
+company (honeypot — must remain empty)
 
-### App/client snippets (use your production domain)
+👉 No IP, fingerprinting, or tracking stored by default.
 
-#### Signup / email confirmation
+📬 Delivery Options
 
-```ts
+Support requests can be delivered via email or database.
+
+Controlled via:
+
+SUPPORT_DELIVERY_MODE
+
+Modes
+Mode	Behavior
+resend	Sends support emails via Resend
+supabase	Stores requests in Supabase DB
+unset	Auto → prefers Resend, else DB
+🔐 Environment Variables (Production)
+
+Configure in Vercel → Project → Settings → Environment Variables.
+
+Required for Supabase Auth (frontend)
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<public anon key>
+
+
+These are public-safe and used by the website only.
+
+Optional (Recommended)
+NEXT_PUBLIC_SITE_URL=https://eventuallyapp.in
+
+
+Used for OpenGraph & absolute URLs.
+
+Option A — Email via Resend
+SUPPORT_DELIVERY_MODE=resend
+RESEND_API_KEY=...
+SUPPORT_FROM_EMAIL=EventUally Support <support@eventuallyapp.in>
+SUPPORT_TO_EMAIL=developers.mindfulapps@gmail.com
+
+Option B — Store in Supabase
+SUPPORT_DELIVERY_MODE=supabase
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+SUPPORT_SUPABASE_TABLE=support_requests
+
+
+⚠️ SUPABASE_SERVICE_ROLE_KEY must never be exposed to the client.
+
+Suggested Supabase Table Schema
+
+Create a table support_requests:
+
+Column	Type	Notes
+id	uuid	PK, default gen_random_uuid()
+created_at	timestamp	default now()
+email	text	not null
+name	text	nullable
+message	text	not null
+source	text	"website"
+🔒 Security & Abuse Prevention
+
+Honeypot field (company) blocks bots
+
+Best-effort in-memory rate limiting
+
+No sensitive data leaks in responses
+
+Server logs only; client gets generic errors
+
+Tokens never sent to backend during auth flows
+
+🔁 Supabase Auth Redirect Configuration
+
+Configure in:
+
+Supabase → Authentication → URL Configuration → Redirect URLs
+
+
+Add:
+
+Production
+https://eventuallyapp.in/auth/confirm
+https://eventuallyapp.in/auth/verified
+https://eventuallyapp.in/auth/reset
+https://eventuallyapp.in/auth/reset/success
+https://eventuallyapp.in/auth/error
+
+Local Development
+http://localhost:3000/auth/confirm
+http://localhost:3000/auth/verified
+http://localhost:3000/auth/reset
+http://localhost:3000/auth/reset/success
+http://localhost:3000/auth/error
+
+🔐 Auth Flow Behavior
+Email Verification / Magic Link
+
+Supabase sends email
+
+User clicks link
+
+Redirects to /auth/confirm
+
+Client validates session
+
+Redirects to /auth/verified or /auth/error
+
+Password Reset
+
+User requests reset
+
+Supabase emails link
+
+Link opens /auth/reset with tokens in hash
+
+Website:
+
+Reads tokens client-side
+
+Sets temp session
+
+Clears hash immediately
+
+User sets new password
+
+Redirects to /auth/reset/success
+
+Invalid/expired links safely route to /auth/error.
+
+🔧 Client Integration Examples
+Signup
 await supabase.auth.signUp({
   email,
   password,
@@ -171,12 +236,51 @@ await supabase.auth.signUp({
     emailRedirectTo: "https://eventuallyapp.in/auth/confirm",
   },
 });
-```
 
-#### Password reset
-
-```ts
+Password Reset
 await supabase.auth.resetPasswordForEmail(email, {
   redirectTo: "https://eventuallyapp.in/auth/reset",
 });
-```
+
+🚀 Deployment (Vercel)
+
+Push repository to GitHub
+
+Import into Vercel
+
+Add environment variables
+
+Deploy
+
+Vercel auto-detects Next.js.
+
+💻 Local Development
+npm install
+npm run dev
+
+
+Open: http://localhost:3000
+
+Scripts
+npm run dev
+npm run build
+npm run start
+npm run lint
+
+📱 Mobile App
+
+This repository is only for the website.
+
+The EventUally mobile app:
+
+Uses Expo
+
+Has its own environment variables
+
+Shares the same Supabase backend
+
+They are intentionally decoupled.
+
+📜 License
+
+Proprietary — All rights reserved © EventUally
