@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
                 https://*.supabase.co
                 https://*.supabase.in
                 https://*.supabase.com
+                https://*.railway.app
                 ws://localhost:3000
                 http://localhost:3000;
               frame-src 'self';
