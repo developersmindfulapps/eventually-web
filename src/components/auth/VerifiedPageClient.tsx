@@ -44,11 +44,8 @@ export function VerifiedPageClient() {
         <p className="mt-2 text-sm leading-6 text-text-secondary">
           Your account is now active.
         </p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <ButtonLink href="/#download" variant="primary" aria-label="Download App">
-            Download App
-          </ButtonLink>
-          <ButtonLink href="/" variant="secondary" aria-label="Back to home">
+        <div className="mt-6 flex justify-center">
+          <ButtonLink href="/" variant="primary" aria-label="Back to home">
             Back to home
           </ButtonLink>
         </div>

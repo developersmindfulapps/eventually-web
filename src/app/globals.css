@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 :root {
   /* EventUally — Calm Tech / Premium Minimal */
   --background: #f9fafb; /* soft off-white */

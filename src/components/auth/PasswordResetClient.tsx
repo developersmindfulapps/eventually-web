@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-
 import { motion, useReducedMotion } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
-
+import { supabase } from "@/lib/supabase/client";
 import { ButtonLink } from "@/components/ui/Button";
 import { CenteredCard } from "@/components/ui/CenteredCard";
 
@@ -38,22 +36,6 @@ function LockIcon() {
   );
 }
 
-function parseHashParams(hash: string) {
-  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(raw);
-  return {
-    access_token: params.get("access_token") || "",
-    refresh_token: params.get("refresh_token") || "",
-    type: params.get("type") || "",
-  };
-}
-
-function sanitizeUrl() {
-  // Remove tokens from the address bar (query/hash may contain auth params).
-  if (typeof window === "undefined") return;
-  window.history.replaceState(null, "", window.location.pathname);
-}
-
 function validatePassword(pw: string) {
   if (!pw) return "Password is required.";
   if (pw.length < 8) return "Use at least 8 characters.";
@@ -61,17 +43,11 @@ function validatePassword(pw: string) {
   return "";
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const IS_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-
 export function PasswordResetClient() {
   const reduceMotion = useReducedMotion();
   const router = useRouter();
-  const [status, setStatus] = useState<Status>(IS_CONFIGURED ? "loading" : "error");
-  const [message, setMessage] = useState<string>(
-    IS_CONFIGURED ? "" : "This page is not configured yet.",
-  );
+  const [status, setStatus] = useState<Status>("loading");
+  const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -82,61 +58,26 @@ export function PasswordResetClient() {
   }, [password, confirm, status]);
 
   useEffect(() => {
-    if (!IS_CONFIGURED) return;
-
-    (async () => {
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      });
-
-      // Supabase PKCE recovery links can arrive as ?code=...
-      const code = new URLSearchParams(window.location.search).get("code");
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        sanitizeUrl();
-        if (error) {
-          setStatus("error");
-          setMessage(
-            "This password reset link is invalid or has expired. Please request a new password reset from the EventUally app.",
-          );
-          return;
-        }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setStatus("ready");
+        setMessage("Set a new password to continue.");
       } else {
-        // Legacy hash token flow: #access_token=...&refresh_token=...&type=recovery
-        const { access_token, refresh_token, type } = parseHashParams(
-          window.location.hash,
-        );
-        if (type !== "recovery" || !access_token || !refresh_token) {
-          sanitizeUrl();
-          setStatus("error");
-          setMessage(
-            "This password reset link is invalid or has expired. Please request a new password reset from the EventUally app.",
-          );
-          return;
-        }
-
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
+        // Wait for auth state change in case it's processing
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+          if (session) {
+            setStatus("ready");
+            setMessage("Set a new password to continue.");
+          } else if (event === 'SIGNED_OUT') {
+            setStatus("error");
+            setMessage("Unable to verify session. Please request a new password reset.");
+          }
         });
-        sanitizeUrl();
-
-        if (error) {
-          setStatus("error");
-          setMessage(
-            "This password reset link is invalid or has expired. Please request a new password reset from the EventUally app.",
-          );
-          return;
-        }
+        return () => subscription.unsubscribe();
       }
-
-      setStatus("ready");
-      setMessage("Set a new password to continue.");
-    })();
+    };
+    checkSession();
   }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -154,40 +95,17 @@ export function PasswordResetClient() {
       return;
     }
 
-    if (!IS_CONFIGURED) {
-      setStatus("error");
-      setMessage("This page is not configured yet.");
-      return;
-    }
-
     setStatus("submitting");
-
-    const supabase = createClient(
-      SUPABASE_URL!,
-      SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      },
-    );
 
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      // Do not leak details (token validity, etc.)
       setStatus("error");
-      setMessage(
-        "We couldn’t update your password. The link may be expired. Please request a new password reset from the EventUally app.",
-      );
+      setMessage("We couldn’t update your password. Please try again.");
       return;
     }
 
-    // Clear any session as a privacy-first default.
     await supabase.auth.signOut();
-
     setStatus("success");
     setMessage("Password updated successfully.");
     router.replace("/auth/reset/success");
@@ -205,112 +123,59 @@ export function PasswordResetClient() {
           Set a new password
         </h1>
         <p className="mt-2 text-sm leading-6 text-text-secondary">
-          {status === "loading" ? "Preparing secure reset…" : message}
+          {status === "loading" ? "Verifying link..." : message}
         </p>
 
         {status === "ready" || status === "submitting" || status === "error" ? (
           <form className="mt-6 grid gap-4 text-left" onSubmit={onSubmit}>
             <div>
-              <label
-                htmlFor="new_password"
-                className="text-sm font-semibold text-text-primary"
-              >
-                New password
-              </label>
+              <label htmlFor="new_password" className="text-sm font-semibold text-text-primary">New password</label>
               <input
                 id="new_password"
                 type="password"
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                aria-invalid={passwordError ? "true" : "false"}
-                aria-describedby={passwordError ? "new_password_error" : undefined}
                 disabled={status === "submitting"}
-                className={[
-                  "mt-2 h-11 w-full rounded-2xl border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors duration-150 ease-out placeholder:text-text-secondary/70 hover:border-border/80 focus:ring-2",
-                  passwordError
-                    ? "border-red-500/60 focus:border-red-500/60 focus:ring-red-500/20"
-                    : "border-border focus:border-primary/60 focus:ring-primary/25",
-                ].join(" ")}
+                className="mt-2 h-11 w-full rounded-2xl border bg-surface px-4 text-[15px] text-text-primary"
               />
-              {passwordError ? (
-                <p
-                  id="new_password_error"
-                  className="mt-1.5 text-xs font-medium text-red-600"
-                  role="alert"
-                >
-                  {passwordError}
-                </p>
-              ) : (
-                <p className="mt-1.5 text-xs text-text-secondary">
-                  Use at least 8 characters.
-                </p>
-              )}
+              {passwordError && <p className="mt-1.5 text-xs text-red-600">{passwordError}</p>}
             </div>
 
             <div>
-              <label
-                htmlFor="confirm_password"
-                className="text-sm font-semibold text-text-primary"
-              >
-                Confirm password
-              </label>
+              <label htmlFor="confirm_password" className="text-sm font-semibold text-text-primary">Confirm password</label>
               <input
                 id="confirm_password"
                 type="password"
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                aria-invalid={confirmError ? "true" : "false"}
-                aria-describedby={
-                  confirmError ? "confirm_password_error" : undefined
-                }
                 disabled={status === "submitting"}
-                className={[
-                  "mt-2 h-11 w-full rounded-2xl border bg-surface px-4 text-[15px] text-text-primary outline-none transition-colors duration-150 ease-out placeholder:text-text-secondary/70 hover:border-border/80 focus:ring-2",
-                  confirmError
-                    ? "border-red-500/60 focus:border-red-500/60 focus:ring-red-500/20"
-                    : "border-border focus:border-primary/60 focus:ring-primary/25",
-                ].join(" ")}
+                className="mt-2 h-11 w-full rounded-2xl border bg-surface px-4 text-[15px] text-text-primary"
               />
-              {confirmError ? (
-                <p
-                  id="confirm_password_error"
-                  className="mt-1.5 text-xs font-medium text-red-600"
-                  role="alert"
-                >
-                  {confirmError}
-                </p>
-              ) : null}
+              {confirmError && <p className="mt-1.5 text-xs text-red-600">{confirmError}</p>}
             </div>
 
-            <div aria-live="polite" className="mt-1 text-sm">
-              {status === "error" && message ? (
-                <p className="text-red-600">{message}</p>
-              ) : null}
+            <div className="mt-1 text-sm text-red-600">
+              {status === "error" && message && !passwordError && !confirmError ? message : null}
             </div>
 
             <button
               type="submit"
               disabled={!canSubmit}
-              className="mt-1 h-12 w-full rounded-full bg-primary px-6 text-[16px] font-semibold text-white shadow-[0_4px_14px_rgba(107,124,255,0.22)] transition-colors duration-150 ease-out hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Update password"
+              className="mt-1 h-12 w-full rounded-full bg-primary px-6 text-[16px] font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {status === "submitting" ? "Updating…" : "Update password"}
             </button>
           </form>
         ) : null}
 
-        {status === "error" ? (
+        {status === "success" && (
           <div className="mt-6 flex justify-center">
-            <ButtonLink href="/support" variant="secondary" aria-label="Contact support">
-              Contact support
-            </ButtonLink>
+            <ButtonLink href="/login" variant="primary">Back to Login</ButtonLink>
           </div>
-        ) : null}
+        )}
       </CenteredCard>
     </motion.div>
   );
 }
-
-

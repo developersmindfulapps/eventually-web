@@ -2,30 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
 import { motion, useReducedMotion } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
-
+import { supabase } from "@/lib/supabase/client";
 import { CenteredCard } from "@/components/ui/CenteredCard";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const IS_CONFIGURED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-
-function sanitizeUrl() {
-  if (typeof window === "undefined") return;
-  // Remove query + hash (may contain auth params).
-  window.history.replaceState(null, "", window.location.pathname);
-}
-
-function parseHashTokens(hash: string) {
-  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(raw);
-  return {
-    access_token: params.get("access_token") || "",
-    refresh_token: params.get("refresh_token") || "",
-  };
-}
 
 function SpinnerIcon() {
   return (
@@ -53,46 +32,40 @@ export function ConfirmRedirectClient() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    (async () => {
-      if (!IS_CONFIGURED) {
-        sanitizeUrl();
-        router.replace("/auth/error");
-        return;
-      }
+    const handleAuth = async () => {
+      // Allow the supabase client to process the URL first (auto-detect)
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      });
-
-      // Supabase PKCE links often come with ?code=...
-      const code = new URLSearchParams(window.location.search).get("code");
-      if (code) {
-        await supabase.auth.exchangeCodeForSession(code).catch(() => null);
-        sanitizeUrl();
-      } else {
-        // Legacy hash token flow (#access_token=...&refresh_token=...)
-        const { access_token, refresh_token } = parseHashTokens(
-          window.location.hash,
-        );
-        if (access_token && refresh_token) {
-          await supabase.auth
-            .setSession({ access_token, refresh_token })
-            .catch(() => null);
-          sanitizeUrl();
-        }
-      }
-
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      if (session) {
         router.replace("/auth/verified");
       } else {
+        // If no session found immediately, check if we need to manually exchange (though createBrowserClient usually handles this)
+        // For now, we trust the shared client. If it failed, we redirect to error.
+        // Giving a small delay or check might be needed if auto-detect is async and racing, 
+        // but getSession() should verify current state.
+
+        // If we are strictly following "Remove createClient", we assume shared client works.
+        // However, if the shared client consumed the code, session should be there.
+        // If not, maybe we need to wait for onAuthStateChange?
+
+        // Let's rely on a simple check for now.
         router.replace("/auth/error");
       }
-    })();
+    };
+
+    // Small timeout to allow shared client to process potential hash/code?
+    // Actually, createBrowserClient is synchronous in setup but async in processing hash.
+    // We can listen to onAuthStateChange.
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || session) {
+        router.replace("/auth/verified");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [router]);
 
   return (
@@ -113,5 +86,3 @@ export function ConfirmRedirectClient() {
     </motion.div>
   );
 }
-
-

@@ -45,9 +45,10 @@ export default function Home() {
             <p className="mt-2 text-sm leading-6 text-text-secondary">
               No ads. No tracking. Just planning.
             </p>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-              Add your App Store / Play Store links when they’re ready. The site
-              is set up so the “Download App” button can jump here.
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              <a href="/dashboard" className="text-indigo-600 hover:text-indigo-500 font-semibold">
+                Go to Web Dashboard &rarr;
+              </a>
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <StoreButton
