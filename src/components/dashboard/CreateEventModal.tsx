@@ -65,7 +65,7 @@ export function CreateEventModal({ onClose }: CreateEventModalProps) {
                 <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">
-                            Event Name -  <span className="text-red-500">*</span>
+                            Event Name <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
