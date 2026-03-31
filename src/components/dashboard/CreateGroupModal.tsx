@@ -26,12 +26,18 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
         setError("");
 
         try {
-            const group = await createGroup({ name: name.trim(), description: description.trim() || undefined });
+            const payload = { name: name.trim(), description: description.trim() || undefined };
+            console.log("[CreateGroup] Sending payload:", payload);
+
+            const group = await createGroup(payload);
+            console.log("[CreateGroup] Created successfully:", group);
+
             // Invalidate groups query so sidebar + groups page refresh
             queryClient.invalidateQueries({ queryKey: ["groups"] });
             onClose();
             router.push(`/groups/${group.id}`);
         } catch (err: any) {
+            console.error("[CreateGroup] Error:", err);
             setError(err.message || "Failed to create group. Please try again.");
         } finally {
             setLoading(false);
@@ -67,7 +73,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. Birthday Squad"
-                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#1F7A63] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1F7A63]/20"
                             autoFocus
                             required
                         />
@@ -82,7 +88,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="What's this group about?"
                             rows={3}
-                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+                            className="block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#1F7A63] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1F7A63]/20 resize-none"
                         />
                     </div>
 
@@ -101,7 +107,7 @@ export function CreateGroupModal({ onClose }: CreateGroupModalProps) {
                         <button
                             type="submit"
                             disabled={loading || !name.trim()}
-                            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-[#1F7A63] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#16614F] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                             {loading ? "Creating…" : "Create Group"}

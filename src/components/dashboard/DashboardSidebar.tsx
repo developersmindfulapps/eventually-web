@@ -7,10 +7,11 @@ import { Users, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useMyGroups } from "@/hooks/useData";
 import { CreateGroupModal } from "@/components/dashboard/CreateGroupModal";
+import { CreateEventButton } from "@/components/events/CreateEventButton";
 
 export function DashboardSidebar() {
     const [showCreateGroup, setShowCreateGroup] = useState(false);
-    const { data: groups } = useMyGroups();
+    const { data: groups, isLoading } = useMyGroups();
     const pathname = usePathname();
 
     return (
@@ -27,6 +28,14 @@ export function DashboardSidebar() {
                     </button>
                 </div>
 
+                {/* ── Create Event ── */}
+                <div className="px-4 pb-3">
+                    <CreateEventButton
+                        label="Create Event"
+                        size="sm"
+                        className="w-full justify-center"
+                    />
+                </div>
                 {/* ── My Groups label ── */}
                 <div className="px-4 pb-2">
                     <div className="flex items-center gap-1.5">
@@ -66,16 +75,22 @@ export function DashboardSidebar() {
                         );
                     })}
 
-                    {groups?.length === 0 && (
-                        <div className="px-2 py-6 text-center">
-                            <p className="text-xs text-gray-400">No groups yet.</p>
-                            <p className="mt-1 text-xs text-gray-400">
-                                Create one to get started.
+                    {!isLoading && groups?.length === 0 && (
+                        <div className="px-3 pt-3 pb-6 flex flex-col items-start gap-1">
+                            <p className="text-sm font-medium text-gray-600">No groups yet</p>
+                            <p className="text-xs text-gray-500 mb-2">
+                                Create or join a group to get started
                             </p>
+                            <button
+                                onClick={() => setShowCreateGroup(true)}
+                                className="text-xs font-semibold text-[#1F7A63] hover:text-[#16614F] hover:underline"
+                            >
+                                Create your first group
+                            </button>
                         </div>
                     )}
 
-                    {!groups && (
+                    {isLoading && (
                         <div className="space-y-2 px-2 pt-1">
                             {[1, 2, 3].map((i) => (
                                 <div key={i} className="h-9 animate-pulse rounded-lg bg-gray-100" />

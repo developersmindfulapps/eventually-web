@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useUpcomingEvents, useMyEvents } from "@/hooks/useData";
+import { useUpcomingEvents } from "@/hooks/useData";
 import { FeaturedCarousel } from "@/components/home/FeaturedCarousel";
-import { FiltersBar } from "@/components/home/FiltersBar";
-import { EventRow } from "@/components/home/EventRow";
+import { EventList } from "@/components/events/EventList";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getGreeting, getUserDisplayName } from "@/lib/auth/getUser";
@@ -12,12 +11,6 @@ import { getGreeting, getUserDisplayName } from "@/lib/auth/getUser";
 export default function DashboardPage() {
     const { user } = useAuth();
     const { data: upcomingEvents } = useUpcomingEvents(5);
-
-    const [search, setSearch] = useState("");
-    const [groupId, setGroupId] = useState("all");
-    const [sort, setSort] = useState("upcoming");
-
-    const { data: events, isLoading: eventsLoading } = useMyEvents({ search, groupId, sort });
 
     const displayName = getUserDisplayName(user);
     const greeting = getGreeting(displayName);
@@ -35,38 +28,16 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                {/* Featured Events */}
+                {/* Your Upcoming Events */}
                 <div>
-                    <h2 className="mb-3 text-base font-bold text-gray-900">Featured Events</h2>
+                    <h2 className="mb-3 text-base font-bold text-gray-900">Your upcoming events</h2>
                     <FeaturedCarousel />
                 </div>
 
-                {/* Search & Filter */}
-                <FiltersBar
-                    search={search}
-                    setSearch={setSearch}
-                    groupId={groupId}
-                    setGroupId={setGroupId}
-                    sort={sort}
-                    setSort={setSort}
-                />
-
-                {/* Events List */}
-                <div className="space-y-3 pb-10">
-                    {eventsLoading &&
-                        [1, 2, 3].map((i) => (
-                            <div key={i} className="h-28 w-full animate-pulse rounded-xl bg-gray-100" />
-                        ))}
-
-                    {events?.map((event) => (
-                        <EventRow key={event.id} event={event} />
-                    ))}
-
-                    {!eventsLoading && events?.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-gray-200 py-12 text-center">
-                            <p className="text-sm text-gray-400">No events found matching your criteria.</p>
-                        </div>
-                    )}
+                {/* Explore Events */}
+                <div>
+                    <h2 className="mb-3 text-base font-bold text-gray-900">Explore events</h2>
+                    <EventList filters={{ search: "", groupId: "all", month: "", sort: "createdAt", isExplore: true }} />
                 </div>
             </div>
 

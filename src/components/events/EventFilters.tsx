@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 import { Search, Filter, Calendar as CalendarIcon, ArrowUpDown } from "lucide-react";
 import { useMyGroups } from "@/hooks/useData";
 
@@ -15,6 +17,19 @@ interface EventFiltersProps {
 
 export function EventFilters({ filters, setFilter }: EventFiltersProps) {
     const { data: groups } = useMyGroups();
+    
+    // Local state for debouncing
+    const [localSearch, setLocalSearch] = useState(filters.search);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (filters.search !== localSearch) {
+                setFilter("search", localSearch);
+            }
+        }, 400); // 400ms debounce
+
+        return () => clearTimeout(timer);
+    }, [localSearch, filters.search, setFilter]);
 
     const months = [
         { value: "", label: "All Months" },
@@ -43,8 +58,8 @@ export function EventFilters({ filters, setFilter }: EventFiltersProps) {
                     type="text"
                     className="block w-full rounded-xl border-0 bg-white py-3 pl-10 pr-4 text-gray-900 ring-1 ring-inset ring-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 shadow-sm"
                     placeholder="Search events by name, group, or location..."
-                    value={filters.search}
-                    onChange={(e) => setFilter("search", e.target.value)}
+                    value={localSearch}
+                    onChange={(e) => setLocalSearch(e.target.value)}
                 />
             </div>
 
@@ -97,9 +112,8 @@ export function EventFilters({ filters, setFilter }: EventFiltersProps) {
                         onChange={(e) => setFilter("sort", e.target.value)}
                         className="block w-full appearance-none rounded-lg border-0 bg-white py-2.5 pl-9 pr-8 text-gray-900 ring-1 ring-inset ring-gray-200 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm shadow-sm"
                     >
-                        <option value="upcoming">Sort: Upcoming</option>
-                        <option value="newest">Sort: Newest</option>
-                        <option value="oldest">Sort: Oldest</option>
+                        <option value="createdAt">Sort: Newly Created</option>
+                        <option value="datetime">Sort: Upcoming First</option>
                     </select>
                 </div>
             </div>

@@ -25,9 +25,9 @@ export function FeaturedCarousel() {
 
     if (!events || events.length === 0) {
         return (
-            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center bg-gray-50/50">
-                <p className="text-gray-500 mb-2">No upcoming featured events.</p>
-                <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-500">Discover Groups</button>
+            <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center bg-gray-50/50">
+                <p className="text-gray-900 font-medium mb-1">Your plans will show up here ✨</p>
+                <p className="text-gray-500 text-sm">Join a group or RSVP to your first event</p>
             </div>
         );
     }

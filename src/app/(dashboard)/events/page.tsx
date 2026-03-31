@@ -9,7 +9,8 @@ export default function EventsPage() {
         search: "",
         groupId: "all",
         month: "",
-        sort: "upcoming",
+        sort: "createdAt",
+        isExplore: true,
     });
 
     const handleFilterChange = (key: string, value: string) => {

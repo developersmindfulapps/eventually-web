@@ -12,30 +12,27 @@ import { VenuePollTab } from "@/components/event/VenuePollTab";
 import { EventChat } from "@/components/event/EventChat";
 
 import { useEvent, useEventAttendees, useEventPotluck, useEventVenues, useEventChat } from "@/hooks/useData";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 export default function EventDetailsPage() {
     const params = useParams();
     const eventId = params.eventId as string;
-    const [activeTab, setActiveTab] = useState("details");
-    const [currentUser, setCurrentUser] = useState<any>(null);
+    const { user: currentUser } = useAuth();
 
-    // Data Fetching
+    // ── DETERMINISTIC: always reset to "details" tab when eventId changes ──
+    const [activeTab, setActiveTab] = useState("details");
+    useEffect(() => {
+        setActiveTab("details");
+    }, [eventId]);
+
+    // Data Fetching — all keyed on eventId, so they refetch when eventId changes
     const { data: event, isLoading: eventLoading } = useEvent(eventId);
     const { data: attendees } = useEventAttendees(eventId);
     const { data: potluckItems } = useEventPotluck(eventId);
     const { data: venues } = useEventVenues(eventId);
     const { data: messages } = useEventChat(eventId);
-
-    useEffect(() => {
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-        supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
-    }, []);
 
     if (eventLoading) {
         return (
@@ -69,11 +66,12 @@ export default function EventDetailsPage() {
         );
     }
 
-    const isHost = currentUser?.id === event.hostName; // Logic needs real host ID check, simplified for now
+    const isHost = currentUser?.id === event.hostName; // Simplified host check
 
     return (
         <AuthGate>
-            <div className="flex min-h-screen flex-col bg-white">
+            {/* key={eventId} forces full component tree remount on navigation → no stale state */}
+            <div key={eventId} className="flex min-h-screen flex-col bg-white">
                 <Header />
 
                 <div className="flex flex-1 overflow-hidden">
@@ -95,16 +93,16 @@ export default function EventDetailsPage() {
 
                                 <div className="p-6">
                                     {activeTab === "details" && <EventDetailsTab event={event} attendees={attendees} />}
-                                    {activeTab === "potluck" && <PotluckTab eventId={eventId} items={potluckItems || []} currentUser={currentUser} />}
-                                    {activeTab === "venue" && <VenuePollTab eventId={eventId} venues={venues || []} />}
-                                    {activeTab === "chat" && <EventChat eventId={eventId} messages={messages || []} currentUser={currentUser} />}
+                                    {activeTab === "potluck" && <PotluckTab eventId={eventId} items={potluckItems || []} currentUser={currentUser as any} />}
+                                    {activeTab === "venue" && <VenuePollTab eventId={eventId} venues={venues || []} isAdmin={isHost} event={event} />}
+                                    {activeTab === "chat" && <EventChat eventId={eventId} messages={messages || []} currentUser={currentUser as any} />}
                                 </div>
                             </div>
                         </div>
                     </main>
                 </div>
 
-                <FloatingChat currentUser={currentUser} />
+                <FloatingChat currentUser={currentUser as any} />
             </div>
         </AuthGate>
     );

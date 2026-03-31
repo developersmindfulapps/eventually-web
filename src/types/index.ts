@@ -10,17 +10,27 @@ export interface Group {
     id: string;
     name: string;
     description?: string;
-    iconUrl?: string; // or color 
+    iconUrl?: string; // or color
     unreadCount?: number;
 }
 
-export type RSVPStatus = "going" | "maybe" | "no" | "pending";
+export interface GroupMember {
+    id: string;
+    userId: string;
+    name: string;
+    avatarUrl?: string;
+    role: "admin" | "member";
+}
+
+// Must match backend: 'going' | 'maybe' | 'not_going'
+export type RSVPStatus = "going" | "maybe" | "not_going";
 
 export interface Event {
-    id: string;
+    id?: string;
+    _id?: string;
     title: string;
     description?: string;
-    startTime: string; // ISO string
+    startTime?: string; // ISO string
     endTime?: string;
     locationName?: string;
     locationAddress?: string;
@@ -29,6 +39,18 @@ export interface Event {
     groupName: string; // denormalized or fetched
     rsvpStatus: RSVPStatus;
     attendeeCount?: number;
+    hostName?: string;
+    potluckEnabled?: boolean;
+    venuePollEnabled?: boolean;
+    status?: "planning" | "finalized" | "completed";
+    finalizedVenueId?: number | null;
+    finalizedVenue?: {
+        id: number;
+        name: string;
+        address: string;
+        lat?: number | null;
+        lng?: number | null;
+    } | null;
 }
 
 export interface ChatMessage {
@@ -73,24 +95,19 @@ export interface VenueVote {
     id: string;
     name: string;
     address: string;
+    lat?: number | null;
+    lng?: number | null;
+    rating?: number | null;
+    googlePlaceId?: string | null;
     voteCount: number;
     userVoted: boolean;
 }
 
-export interface Event {
+export interface PlaceResult {
     id: string;
-    title: string;
-    description?: string;
-    startTime: string; // ISO string
-    endTime?: string;
-    locationName?: string;
-    locationAddress?: string;
-    locationImageUrl?: string;
-    groupId: string;
-    groupName: string; // denormalized or fetched
-    rsvpStatus: RSVPStatus;
-    attendeeCount?: number;
-    hostName?: string;
-    potluckEnabled?: boolean;
-    venuePollEnabled?: boolean;
+    name: string;
+    address: string;
+    rating?: number | null;
+    lat?: number | null;
+    lng?: number | null;
 }

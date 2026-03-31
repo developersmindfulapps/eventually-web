@@ -2,8 +2,8 @@
 
 import { useEventsInfinite } from "@/hooks/useData";
 import { EventRow } from "@/components/home/EventRow";
+import { CreateEventButton } from "@/components/events/CreateEventButton";
 import { useEffect, useRef } from "react";
-// Since I don't see mantine in package.json, I'll use a simple custom hook logic or standard IntersectionObserver.
 
 export function EventList({ filters }: { filters: any }) {
     const {
@@ -60,12 +60,7 @@ export function EventList({ filters }: { filters: any }) {
                 <h3 className="mt-2 text-sm font-semibold text-gray-900">No events found</h3>
                 <p className="mt-1 text-sm text-gray-500">Try adjusting your filters or search terms.</p>
                 <div className="mt-6">
-                    <button
-                        type="button"
-                        className="inline-flex items-center rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                    >
-                        Create Event
-                    </button>
+                    <CreateEventButton label="Create Event" />
                 </div>
             </div>
         );
@@ -77,14 +72,8 @@ export function EventList({ filters }: { filters: any }) {
                 <EventRow key={event.id} event={event} />
             ))}
 
-            {/* Loading Indicator for next page */}
-            <div ref={observerTarget} className="h-4 w-full">
-                {isFetchingNextPage && (
-                    <div className="flex justify-center py-4">
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
-                    </div>
-                )}
-            </div>
+            {/* Silent Loading Indicator for next page */}
+            <div ref={observerTarget} className="h-4 w-full" />
         </div>
     );
 }

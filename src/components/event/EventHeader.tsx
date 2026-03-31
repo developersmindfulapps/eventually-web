@@ -1,8 +1,9 @@
 "use client";
 
 import { Share, Edit, Calendar, MapPin } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Event } from "@/types";
+import { cn } from "@/lib/cn";
 
 interface EventHeaderProps {
     event: Event;
@@ -27,10 +28,14 @@ export function EventHeader({ event, isHost }: EventHeaderProps) {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">{event.title}</h1>
                         <div className="mt-2 flex flex-col gap-1 text-gray-500 sm:flex-row sm:gap-4">
-                            <div className="flex items-center gap-1.5 text-sm">
-                                <Calendar className="h-4 w-4" />
+                            <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                <span className={cn(event.startTime && isValid(new Date(event.startTime)) ? "bg-[#E6F4F1] text-[#1F7A63]" : "bg-gray-100 text-gray-500", "flex h-6 w-6 items-center justify-center rounded-lg")}>
+                                    <Calendar className="h-3.5 w-3.5" />
+                                </span>
                                 <span>
-                                    {format(new Date(event.startTime), "EEEE, MMMM d")} • {format(new Date(event.startTime), "h:mm a")}
+                                    {event.startTime && isValid(new Date(event.startTime))
+                                        ? `${format(new Date(event.startTime), "EEEE, MMMM d")} • ${format(new Date(event.startTime), "h:mm a")}`
+                                        : "Date TBD"}
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5 text-sm">
