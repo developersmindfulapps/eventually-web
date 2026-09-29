@@ -10,29 +10,29 @@ interface PageProps {
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const searchParams = await props.searchParams;
   const lang = typeof searchParams?.lang === 'string' ? searchParams.lang : undefined;
-  const doc = getLegalDocument('terms-of-use', lang);
+  const doc = getLegalDocument('community-guidelines', lang);
 
   return {
-    title: 'Terms of Use - EventUAlly',
+    title: 'Community Guidelines & Safety Policy - EventUAlly',
     description:
-      'EventUAlly Terms of Use. The rules, eligibility, responsibilities, and guidelines for using the EventUAlly service.',
+      'EventUAlly Community Guidelines & Safety Policy. Standards for safe, respectful participation, real-world safety, reporting, and moderation.',
     alternates: {
-      canonical: 'https://eventuallyapp.in/terms',
+      canonical: 'https://eventuallyapp.in/community-guidelines',
     },
     openGraph: {
-      title: 'Terms of Use - EventUAlly',
+      title: 'Community Guidelines & Safety Policy - EventUAlly',
       description:
-        'EventUAlly Terms of Use. The rules, eligibility, responsibilities, and guidelines for using the EventUAlly service.',
-      url: 'https://eventuallyapp.in/terms',
+        'EventUAlly Community Guidelines & Safety Policy. Standards for safe, respectful participation, real-world safety, reporting, and moderation.',
+      url: 'https://eventuallyapp.in/community-guidelines',
       type: 'website',
     },
   };
 }
 
-export default async function TermsOfUsePage(props: PageProps) {
+export default async function CommunityGuidelinesPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const lang = typeof searchParams?.lang === 'string' ? searchParams.lang : undefined;
-  const doc = getLegalDocument('terms-of-use', lang);
+  const doc = getLegalDocument('community-guidelines', lang);
 
   return (
     <LegalPage

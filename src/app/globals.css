@@ -11,27 +11,75 @@
 }
 
 :root {
-  /* EventUally — Calm Tech / Premium Minimal */
-  --background: #f9fafb; /* soft off-white */
-  --surface: #ffffff; /* cards, panels */
-  --primary: #6e7cf6; /* blurple */
-  --primary-soft: #eef1ff; /* blurple tint */
-  --text-primary: #1f2937; /* near-black */
-  --text-secondary: #6b7280; /* muted gray */
-  --border: #e5e7eb;
-  --footer-bg: #f3f4f6;
+  /* EventUally Light Theme (6 AM to 6 PM Default) */
+  --background: #FAF9F6;
+  --surface: #FFFFFF;
+  --surface-subtle: #F0FDFA;
+  --surface-card: #FFFFFF;
+  --primary: #0F766E;
+  --primary-dark: #115E59;
+  --primary-light: #14B8A6;
+  --primary-soft: #F0FDFA;
+  --primary-glow: rgba(15, 118, 110, 0.16);
+  --accent: #2DD4BF;
+  --accent-soft: #CCFBF1;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --border: #E5E7EB;
+  --border-subtle: #F3F4F6;
+  --footer-bg: #F4F4F1;
+  --badge-bg: #E6FFFA;
+  --badge-text: #0F766E;
+  --badge-border: #99F6E4;
+}
+
+html.dark {
+  /* EventUally Dark Theme (6 PM to 6 AM Default) */
+  --background: #070F11;
+  --surface: #0D191D;
+  --surface-subtle: #13252B;
+  --surface-card: #0F1E23;
+  --primary: #14B8A6;
+  --primary-dark: #0F766E;
+  --primary-light: #2DD4BF;
+  --primary-soft: rgba(20, 184, 166, 0.12);
+  --primary-glow: rgba(45, 212, 191, 0.22);
+  --accent: #2DD4BF;
+  --accent-soft: rgba(45, 212, 191, 0.15);
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+  --border: #1E2F35;
+  --border-subtle: #142227;
+  --footer-bg: #04090B;
+  --badge-bg: rgba(20, 184, 166, 0.15);
+  --badge-text: #2DD4BF;
+  --badge-border: rgba(45, 212, 191, 0.3);
 }
 
 @theme inline {
   /* Colors */
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-card: var(--surface-card);
   --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
   --color-primary-soft: var(--primary-soft);
+  --color-primary-glow: var(--primary-glow);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-footer-bg: var(--footer-bg);
+  --color-badge-bg: var(--badge-bg);
+  --color-badge-text: var(--badge-text);
+  --color-badge-border: var(--badge-border);
 
   /* Typography */
   --font-sans: var(--font-inter);
@@ -41,10 +89,14 @@
 @layer base {
   html {
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
   body {
-    font-family: var(--font-inter), system-ui;
+    font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   h1,
@@ -57,6 +109,7 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--primary) 22%, white);
+    background: color-mix(in srgb, var(--primary) 28%, transparent);
+    color: inherit;
   }
 }

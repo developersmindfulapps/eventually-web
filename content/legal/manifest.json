@@ -1,0 +1,27 @@
+{
+  "product": "EventUAlly",
+  "operator": "Rajat Deep Singh",
+  "contact": "developers.mindfulapps@gmail.com",
+  "website": "https://eventuallyapp.in/",
+  "canonicalLanguage": "en",
+  "version": "1.0",
+  "effectiveDate": "2026-09-29",
+  "lastUpdated": "2026-09-29",
+  "documents": [
+    "privacy-policy",
+    "terms-of-use",
+    "community-guidelines"
+  ],
+  "languages": [
+    "en",
+    "fr",
+    "de",
+    "hi",
+    "ar",
+    "ru",
+    "ja",
+    "ko"
+  ],
+  "translationPolicy": "English is canonical. Translations must preserve the complete legal meaning and section structure of English. If a translation is unavailable, serve English rather than an incomplete translation.",
+  "fallbackLanguage": "en"
+}

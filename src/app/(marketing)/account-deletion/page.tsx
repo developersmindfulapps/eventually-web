@@ -4,15 +4,19 @@ import { Card } from "@/components/ui/Card";
 export const metadata = {
   title: "Account Deletion",
   description:
-    "How to delete your EventUally account in-app, plus support contact and a permanent deletion warning.",
+    "How to delete your EventUAlly account in-app, plus support contact and a permanent deletion warning.",
 };
 
 export default function AccountDeletionPage() {
   return (
-    <LegalPage title="Account Deletion" lastUpdated="Jan 24, 2026">
+    <LegalPage
+      title="Account Deletion"
+      lastUpdated="Jan 24, 2026"
+      showLanguageSelector={false}
+    >
       <section>
         <p>
-          You can delete your EventUally account directly in the app. If you
+          You can delete your EventUAlly account directly in the app. If you
           have trouble, support can help.
         </p>
       </section>
@@ -22,7 +26,7 @@ export default function AccountDeletionPage() {
           Delete your account in-app
         </h2>
         <ol className="mt-3 list-decimal space-y-2 pl-5">
-          <li>Open EventUally.</li>
+          <li>Open EventUAlly.</li>
           <li>Go to Settings.</li>
           <li>Select “Account”.</li>
           <li>Tap “Delete Account”.</li>
@@ -60,5 +64,3 @@ export default function AccountDeletionPage() {
     </LegalPage>
   );
 }
-
-

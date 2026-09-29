@@ -1,83 +1,85 @@
 "use client";
 
+import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
-
-import { Card } from "@/components/ui/Card";
+import { MapPin, Layers, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
 import { Container } from "@/components/ui/Container";
-import {
-  GroupPlanningIcon,
-  SmartSchedulingIcon,
-  VenueVotingIcon,
-} from "@/components/home/FeatureIcons";
 
 const features = [
   {
-    title: "Group Planning",
-    description:
-      "Create circles for your different friend groups. Keep plans organized and separate.",
-    Icon: GroupPlanningIcon,
+    title: "Google Maps Integration",
+    description: "Find and choose the perfect venue with accurate place details and search.",
+    icon: MapPin,
+    badgeBg: "bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800/40",
   },
   {
-    title: "Smart Scheduling",
-    description:
-      "Find a time that works for everyone without back-and-forth messaging.",
-    Icon: SmartSchedulingIcon,
+    title: "Multiple Event Types",
+    description: "Meetups, dining, sports, outdoors, shows, hobby groups, and more.",
+    icon: Layers,
+    badgeBg: "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-800/40",
   },
   {
-    title: "Venue Voting",
-    description:
-      "Can’t decide where to go? Let the group vote and settle it in seconds.",
-    Icon: VenueVotingIcon,
+    title: "Simple RSVP Flow",
+    description: "Let hosts and friends know your availability in seconds without awkward texts.",
+    icon: HeartHandshake,
+    badgeBg: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/40",
+  },
+  {
+    title: "Safe & Private",
+    description: "Control your visibility. Moderate group content and manage your experience safely.",
+    icon: ShieldCheck,
+    badgeBg: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/40",
   },
 ];
 
 export function FeatureGrid() {
-  const reduceMotion = useReducedMotion();
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section
-      aria-label="Features"
-      className="border-y border-border/70 bg-surface"
-    >
-      <Container className="py-12 sm:py-16">
-        <div className="mb-7">
-          <h2 className="font-heading text-2xl font-bold tracking-tight text-text-primary">
-            Features
+    <section className="relative border-t border-border/70 bg-surface/50 py-16 sm:py-24">
+      <Container>
+        {/* Section Header */}
+        <div className="mx-auto max-w-2xl text-center">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-badge-border bg-badge-bg px-3 py-1 text-xs font-semibold text-badge-text">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>MORE TO EXPLORE</span>
+          </div>
+          <h2 className="mt-4 font-heading text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
+            Everything you need to make plans happen.
           </h2>
-          <p className="mt-2 text-sm leading-6 text-text-secondary">
-            Everything you need to plan without friction.
+          <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base">
+            Thoughtfully built for real-life gatherings, zero clutter.
           </p>
         </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {features.map(({ title, description, Icon }, idx) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: reduceMotion ? 0 : 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.5, delay: idx * 0.06, ease: "easeOut" }}
-            >
-              <Card className="h-full transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_22px_rgba(0,0,0,0.06)] focus-within:shadow-[0_6px_22px_rgba(0,0,0,0.06)]">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-xl bg-primary-soft p-3 text-primary">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-heading text-lg font-semibold text-text-primary">
-                      {title}
-                    </h3>
-                    <p className="mt-1.5 text-sm leading-6 text-text-secondary">
-                      {description}
-                    </p>
-                  </div>
+
+        {/* 4 Feature Cards */}
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((feature, idx) => {
+            const Icon = feature.icon;
+            return (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5, delay: idx * 0.08, ease: "easeOut" }}
+                className="group rounded-3xl border border-border bg-surface p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/40 flex flex-col"
+              >
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border shadow-inner transition-transform duration-300 group-hover:scale-105 ${feature.badgeBg}`}>
+                  <Icon className="h-6 w-6" />
                 </div>
-              </Card>
-            </motion.div>
-          ))}
+
+                <h3 className="mt-5 font-heading text-lg font-bold text-text-primary">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-text-secondary sm:text-sm">
+                  {feature.description}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
       </Container>
     </section>
   );
 }
-
-

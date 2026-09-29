@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Inter } from "next/font/google";
-import QueryProvider from "@/providers/QueryProvider";
-import { AuthProvider } from "@/components/providers/AuthProvider";
+import { ThemeProvider, ThemeScript } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -22,54 +21,52 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "EventUally",
+    default: "EventUally — Make Plans. Find People. Actually Go.",
     template: "%s • EventUally",
   },
   description:
-    "The simplest way to plan events without messy group chats. Create groups, schedule, vote on venues, and bring people together—calmly.",
+    "EventUally helps you discover events, join groups, plan with friends and turn ideas into real moments without messy group chats.",
   openGraph: {
     type: "website",
     url: "/",
     siteName: "EventUally",
-    title: "EventUally",
+    title: "EventUally — Make Plans. Find People. Actually Go.",
     description:
-      "The simplest way to plan events without messy group chats. Create groups, schedule, and vote on venues—calmly.",
+      "EventUally helps you discover events, join groups, plan with friends and turn ideas into real moments.",
     images: [
       {
         url: "/og.svg",
         width: 1200,
         height: 630,
-        alt: "EventUally — Plan events, effortlessly.",
+        alt: "EventUally — Make Plans. Find People. Actually Go.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "EventUally",
+    title: "EventUally — Make Plans. Find People. Actually Go.",
     description:
-      "The simplest way to plan events without messy group chats. Create groups, schedule, and vote on venues—calmly.",
+      "EventUally helps you discover events, join groups, plan with friends and turn ideas into real moments.",
     images: ["/og.svg"],
   },
 };
 
-// Root layout — providers only.
-// Navbar + Footer are added by (marketing)/layout.tsx for marketing pages.
-// Dashboard pages use (dashboard)/layout.tsx which has no marketing chrome.
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body
-        className={`${dmSans.variable} ${inter.variable} min-h-dvh bg-background text-text-primary antialiased`}
+        className={`${dmSans.variable} ${inter.variable} min-h-dvh bg-background text-text-primary antialiased selection:bg-teal-500/20`}
       >
-        <QueryProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </QueryProvider>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

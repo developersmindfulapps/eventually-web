@@ -1,143 +1,137 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { Bell, Search, Menu, X, User as UserIcon, LogOut } from "lucide-react";
-import { useState } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { Calendar, Menu, X, ArrowDownToLine } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Header() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const pathname = usePathname();
-    const router = useRouter();
-    const { user, loading } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        router.refresh();
-        router.push("/login");
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
     };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    const isDashboard = pathname?.startsWith("/dashboard") || pathname?.startsWith("/events") || pathname?.startsWith("/groups");
+  const closeMenu = () => setMobileMenuOpen(false);
 
-    return (
-        <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                {/* Logo */}
-                <div className="flex items-center gap-8">
-                    <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 font-bold text-white">
-                            E
-                        </div>
-                        <span className="text-xl font-bold text-gray-900">EventUally</span>
-                    </Link>
+  return (
+    <header
+      className={`sticky top-0 z-50 w-full transition-all duration-200 ${
+        isScrolled
+          ? "border-b border-border/80 bg-background/85 backdrop-blur-md shadow-sm"
+          : "border-b border-transparent bg-background/60 backdrop-blur-sm"
+      }`}
+    >
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        {/* Logo / Brand */}
+        <Link
+          href="/"
+          onClick={closeMenu}
+          className="group flex items-center gap-2.5 rounded-lg px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          aria-label="EventUally Home"
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-700 via-teal-600 to-teal-500 text-white shadow-md shadow-teal-700/20 transition-transform group-hover:scale-105">
+            <Calendar className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-heading text-lg font-bold tracking-tight text-text-primary">
+              EventUally
+            </span>
+          </div>
+        </Link>
 
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-6">
-                        {user && (
-                            <Link
-                                href="/dashboard"
-                                className={`text-sm font-medium transition-colors hover:text-indigo-600 ${isDashboard ? "text-indigo-600" : "text-gray-600"
-                                    }`}
-                            >
-                                Dashboard
-                            </Link>
-                        )}
-                    </nav>
-                </div>
+        {/* Desktop Navigation */}
+        <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-8 text-sm font-medium">
+          <Link
+            href="/#features"
+            className="text-text-secondary transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md px-1 py-1"
+          >
+            Features
+          </Link>
+          <Link
+            href="/#how-it-works"
+            className="text-text-secondary transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md px-1 py-1"
+          >
+            How it works
+          </Link>
+          <Link
+            href="/support"
+            className="text-text-secondary transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md px-1 py-1"
+          >
+            Support
+          </Link>
+        </nav>
 
-                {/* Right Section */}
-                <div className="hidden md:flex items-center gap-4">
-                    {user ? (
-                        <>
-                            <div className="relative hidden lg:block">
-                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search events..."
-                                    className="h-9 w-64 rounded-full border-0 bg-gray-100 pl-9 pr-4 text-sm focus:ring-2 focus:ring-inset focus:ring-indigo-600"
-                                />
-                            </div>
-                            <button className="relative rounded-full bg-gray-100 p-2 text-gray-500 hover:bg-gray-200">
-                                <Bell className="h-5 w-5" />
-                                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-                            </button>
+        {/* Right CTA Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
+          <Link
+            href="/#download"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(15,118,110,0.25)] transition-all hover:bg-primary-dark hover:shadow-[0_6px_20px_rgba(15,118,110,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-95"
+          >
+            <ArrowDownToLine className="h-4 w-4" />
+            Get the App
+          </Link>
+        </div>
 
-                            {/* User Dropdown / Profile */}
-                            <div className="flex items-center gap-3 pl-2 border-l border-gray-200">
-                                <div className="text-right hidden lg:block">
-                                    <p className="text-sm font-medium text-gray-900">{user.user_metadata.full_name || user.email}</p>
-                                    <p className="text-xs text-gray-500">Member</p>
-                                </div>
-                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
-                                    {user.user_metadata.full_name ? user.user_metadata.full_name[0] : (user.email ? user.email[0].toUpperCase() : "U")}
-                                </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="ml-2 text-gray-400 hover:text-gray-600"
-                                    title="Sign Out"
-                                >
-                                    <LogOut className="h-5 w-5" />
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        !loading && (
-                            <div className="flex items-center gap-4">
-                                <Link href="/login" className="text-sm font-medium text-gray-700 hover:text-gray-900">
-                                    Log in
-                                </Link>
-                                <Link
-                                    href="/signup"
-                                    className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                                >
-                                    Sign up
-                                </Link>
-                            </div>
-                        )
-                    )}
-                </div>
+        {/* Mobile Hamburger & Theme Toggle */}
+        <div className="flex md:hidden items-center gap-2">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-expanded={mobileMenuOpen}
+            aria-label="Toggle navigation menu"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
 
-                {/* Mobile Menu Button  */}
-                <button
-                    className="md:hidden p-2 text-gray-600"
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                >
-                    {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </button>
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-b border-border bg-surface/95 backdrop-blur-lg px-4 py-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <nav className="flex flex-col gap-4 text-base font-medium">
+            <Link
+              href="/#features"
+              onClick={closeMenu}
+              className="rounded-lg px-3 py-2 text-text-secondary hover:bg-surface-subtle hover:text-primary"
+            >
+              Features
+            </Link>
+            <Link
+              href="/#how-it-works"
+              onClick={closeMenu}
+              className="rounded-lg px-3 py-2 text-text-secondary hover:bg-surface-subtle hover:text-primary"
+            >
+              How it works
+            </Link>
+            <Link
+              href="/support"
+              onClick={closeMenu}
+              className="rounded-lg px-3 py-2 text-text-secondary hover:bg-surface-subtle hover:text-primary"
+            >
+              Support
+            </Link>
+            <div className="pt-2">
+              <Link
+                href="/#download"
+                onClick={closeMenu}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-base font-semibold text-white shadow-md active:scale-95"
+              >
+                <ArrowDownToLine className="h-4 w-4" />
+                Get the App
+              </Link>
             </div>
-
-            {/* Mobile Menu */}
-            {isMenuOpen && (
-                <div className="md:hidden border-t border-gray-100 bg-white px-4 py-4 space-y-4">
-                    {user ? (
-                        <>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">
-                                    {user.user_metadata.full_name ? user.user_metadata.full_name[0] : (user.email ? user.email[0].toUpperCase() : "U")}
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium text-gray-900">{user.user_metadata.full_name || user.email}</p>
-                                </div>
-                            </div>
-                            <Link href="/dashboard" className="block text-base font-medium text-gray-900" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
-                            <button
-                                onClick={() => { handleLogout(); setIsMenuOpen(false); }}
-                                className="block w-full text-left text-base font-medium text-red-600"
-                            >
-                                Sign Out
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <Link href="/login" className="block text-base font-medium text-gray-900" onClick={() => setIsMenuOpen(false)}>Log in</Link>
-                            <Link href="/signup" className="block text-base font-medium text-indigo-600" onClick={() => setIsMenuOpen(false)}>Sign up</Link>
-                        </>
-                    )}
-                </div>
-            )}
-        </header>
-    );
+          </nav>
+        </div>
+      )}
+    </header>
+  );
 }
