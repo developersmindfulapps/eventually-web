@@ -12,7 +12,7 @@ type FormValues = {
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
 
 function isValidEmail(email: string) {
-  // Reasonable email check (not perfect, but safe for client-side UX)
+  if (email.length > 254) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
@@ -32,7 +32,11 @@ export function SupportFormCard() {
   const isDisabled = status === "submitting";
 
   const canSubmit = useMemo(() => {
-    return values.email.trim().length > 0 && values.message.trim().length > 0;
+    return (
+      values.email.trim().length > 0 &&
+      values.message.trim().length >= 10 &&
+      values.message.length <= 350
+    );
   }, [values.email, values.message]);
 
   function validate(v: FormValues): FieldErrors {
@@ -40,14 +44,23 @@ export function SupportFormCard() {
     const email = v.email.trim();
     const message = v.message.trim();
 
-    if (!email) next.email = "Email is required.";
-    else if (!isValidEmail(email)) next.email = "Please enter a valid email.";
+    if (!email) {
+      next.email = "Email is required.";
+    } else if (!isValidEmail(email)) {
+      next.email = "Please enter a valid email.";
+    }
 
-    if (v.name.trim().length > 120) next.name = "Name is too long.";
+    if (v.name.trim().length > 120) {
+      next.name = "Name is too long (maximum 120 characters).";
+    }
 
-    if (!message) next.message = "Message is required.";
-    else if (message.length < 10) next.message = "Message is too short.";
-    else if (message.length > 4000) next.message = "Message is too long.";
+    if (!message) {
+      next.message = "Message is required.";
+    } else if (message.length < 10) {
+      next.message = "Message is too short (minimum 10 characters).";
+    } else if (message.length > 350 || [...message].length > 350) {
+      next.message = "Message is too long (maximum 350 characters).";
+    }
 
     return next;
   }
@@ -140,6 +153,7 @@ export function SupportFormCard() {
             type="email"
             required
             autoComplete="email"
+            maxLength={254}
             placeholder="you@example.com"
             value={values.email}
             onChange={(e) => setValues((s) => ({ ...s, email: e.target.value }))}
@@ -185,6 +199,7 @@ export function SupportFormCard() {
             name="name"
             type="text"
             autoComplete="name"
+            maxLength={120}
             placeholder="Your name"
             value={values.name}
             onChange={(e) => setValues((s) => ({ ...s, name: e.target.value }))}
@@ -226,6 +241,7 @@ export function SupportFormCard() {
             id="support_message"
             name="message"
             required
+            maxLength={350}
             placeholder="Tell us what happened (steps, device, etc.)"
             value={values.message}
             onChange={(e) =>
@@ -295,5 +311,3 @@ export function SupportFormCard() {
     </section>
   );
 }
-
-

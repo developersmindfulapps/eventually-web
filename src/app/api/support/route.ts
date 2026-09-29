@@ -7,12 +7,30 @@ type SupportRequestBody = {
   company?: unknown; // honeypot
 };
 
-function isValidEmail(email: string) {
+const MAX_BODY_BYTES = 10 * 1024; // 10 KB
+const MAX_NAME_LENGTH = 120;
+const MAX_EMAIL_LENGTH = 254;
+const MIN_MESSAGE_LENGTH = 10;
+const MAX_MESSAGE_LENGTH = 350;
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_REQUESTS_PER_IP = 5;
+const MAX_REQUESTS_PER_EMAIL = 3;
+
+function isValidEmail(email: string): boolean {
+  if (email.length > MAX_EMAIL_LENGTH) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
+}
+
+function payloadTooLarge() {
+  return NextResponse.json(
+    { error: "Payload too large (maximum 10 KB)." },
+    { status: 413 },
+  );
 }
 
 function tooManyRequests() {
@@ -22,29 +40,101 @@ function tooManyRequests() {
   );
 }
 
-// Minimal, privacy-first throttling hint:
-// For real production rate limiting on Vercel, use a shared store (e.g. Upstash)
-// keyed by a short-lived fingerprint (or by email hash) rather than storing IP.
-function naiveThrottleKey(email: string) {
-  return email.trim().toLowerCase();
+// In-memory rate limiting stores
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
 }
 
-const throttle = new Map<string, { count: number; resetAt: number }>();
-function naiveInMemoryRateLimit(key: string) {
-  // NOTE: This is best-effort only; serverless instances don't share memory.
-  const now = Date.now();
-  const windowMs = 60_000; // 1 min
-  const max = 5;
+const ipThrottle = new Map<string, RateLimitEntry>();
+const emailThrottle = new Map<string, RateLimitEntry>();
 
-  const entry = throttle.get(key);
-  if (!entry || entry.resetAt < now) {
-    throttle.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+function cleanExpiredEntries(store: Map<string, RateLimitEntry>, now: number) {
+  for (const [key, entry] of store.entries()) {
+    if (entry.resetAt <= now) {
+      store.delete(key);
+    }
   }
-  if (entry.count >= max) return false;
-  entry.count += 1;
-  throttle.set(key, entry);
-  return true;
+}
+
+export function checkRateLimit(
+  ip: string,
+  normalizedEmail: string,
+  now = Date.now(),
+): { allowed: boolean } {
+  // Prune expired entries to prevent memory accumulation
+  cleanExpiredEntries(ipThrottle, now);
+  cleanExpiredEntries(emailThrottle, now);
+
+  // Check IP limit
+  if (ip) {
+    const ipEntry = ipThrottle.get(ip);
+    if (ipEntry && ipEntry.resetAt > now) {
+      if (ipEntry.count >= MAX_REQUESTS_PER_IP) {
+        return { allowed: false };
+      }
+    }
+  }
+
+  // Check Email limit
+  if (normalizedEmail) {
+    const emailEntry = emailThrottle.get(normalizedEmail);
+    if (emailEntry && emailEntry.resetAt > now) {
+      if (emailEntry.count >= MAX_REQUESTS_PER_EMAIL) {
+        return { allowed: false };
+      }
+    }
+  }
+
+  // Increment IP usage
+  if (ip) {
+    const ipEntry = ipThrottle.get(ip);
+    if (!ipEntry || ipEntry.resetAt <= now) {
+      ipThrottle.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    } else {
+      ipEntry.count += 1;
+    }
+  }
+
+  // Increment Email usage
+  if (normalizedEmail) {
+    const emailEntry = emailThrottle.get(normalizedEmail);
+    if (!emailEntry || emailEntry.resetAt <= now) {
+      emailThrottle.set(normalizedEmail, {
+        count: 1,
+        resetAt: now + RATE_LIMIT_WINDOW_MS,
+      });
+    } else {
+      emailEntry.count += 1;
+    }
+  }
+
+  return { allowed: true };
+}
+
+export function getClientIp(req: Request): string {
+  // Cloudflare trusted client IP
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  // Vercel / reverse-proxy trusted client IP
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+
+  // Standard x-forwarded-for header (first entry is original client)
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    const ips = forwarded.split(",").map((item) => item.trim());
+    if (ips.length > 0 && ips[0]) return ips[0];
+  }
+
+  return "127.0.0.1";
+}
+
+// Reset rate limits for test environments
+export function resetRateLimits() {
+  ipThrottle.clear();
+  emailThrottle.clear();
 }
 
 async function deliverViaResend(input: {
@@ -62,13 +152,10 @@ async function deliverViaResend(input: {
     throw new Error("Missing Resend env configuration.");
   }
 
-  // Allow either:
-  // - support@eventuallyapp.in
-  // - EventUally Support <support@eventuallyapp.in>
   const from =
     rawFrom.includes("<") && rawFrom.includes(">")
       ? rawFrom
-      : `EventUally Support <${rawFrom}>`;
+      : `EventUAlly Support <${rawFrom}>`;
 
   const resend = new Resend(apiKey);
   await resend.emails.send({
@@ -114,18 +201,22 @@ async function deliverViaSupabase(input: {
 }
 
 export async function POST(req: Request) {
-  let body: SupportRequestBody;
-  try {
-    body = (await req.json()) as SupportRequestBody;
-  } catch {
-    return badRequest("Invalid JSON.");
+  // 1. Early request-size guard using Content-Length header if present
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+    return payloadTooLarge();
   }
 
-  // Debug env pickup (dev-only). Do not log secrets.
-  if (process.env.NODE_ENV !== "production") {
-    console.log("DELIVERY MODE:", process.env.SUPPORT_DELIVERY_MODE);
-    console.log("FROM:", process.env.SUPPORT_FROM_EMAIL);
-    console.log("TO:", process.env.SUPPORT_TO_EMAIL);
+  // 2. Parse JSON body
+  let body: SupportRequestBody;
+  try {
+    const rawText = await req.text();
+    if (rawText.length > MAX_BODY_BYTES) {
+      return payloadTooLarge();
+    }
+    body = JSON.parse(rawText) as SupportRequestBody;
+  } catch {
+    return badRequest("Invalid JSON.");
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
@@ -133,40 +224,67 @@ export async function POST(req: Request) {
   const message = typeof body.message === "string" ? body.message.trim() : "";
   const company = typeof body.company === "string" ? body.company.trim() : "";
 
-  // Honeypot triggered: pretend success to avoid training bots.
+  // 3. Honeypot check: silently accept bots without executing delivery
   if (company) {
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
-  if (!email || !isValidEmail(email)) return badRequest("Invalid email.");
-  if (name.length > 120) return badRequest("Invalid name.");
-  if (!message || message.length < 10 || message.length > 4000)
-    return badRequest("Invalid message.");
+  // 4. Strict field validations
+  if (!email) {
+    return badRequest("Email is required.");
+  }
+  if (!isValidEmail(email)) {
+    return badRequest("Please enter a valid email address.");
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return badRequest(`Name is too long (maximum ${MAX_NAME_LENGTH} characters).`);
+  }
 
-  // Best-effort throttling without IP storage
-  const key = naiveThrottleKey(email);
-  if (!naiveInMemoryRateLimit(key)) return tooManyRequests();
+  // 5. Message validation (min 10, max 350 characters, Unicode-safe)
+  if (!message) {
+    return badRequest("Message is required.");
+  }
+  if (message.length < MIN_MESSAGE_LENGTH) {
+    return badRequest(`Message is too short (minimum ${MIN_MESSAGE_LENGTH} characters).`);
+  }
+  // Check both UTF-16 code units and Unicode grapheme cluster/codepoint length
+  const unicodeLength = [...message].length;
+  if (message.length > MAX_MESSAGE_LENGTH || unicodeLength > MAX_MESSAGE_LENGTH) {
+    return badRequest(`Message is too long (maximum ${MAX_MESSAGE_LENGTH} characters).`);
+  }
 
+  // 6. Rate limiting (IP + Normalized Email)
+  const clientIp = getClientIp(req);
+  const normalizedEmail = email.toLowerCase();
+  const rateLimitResult = checkRateLimit(clientIp, normalizedEmail);
+
+  if (!rateLimitResult.allowed) {
+    return tooManyRequests();
+  }
+
+  // 7. Delivery execution
   const mode = (process.env.SUPPORT_DELIVERY_MODE || "").toLowerCase();
   try {
-    if (mode === "supabase") {
+    if (mode === "test" || process.env.NODE_ENV === "test") {
+      return NextResponse.json({ ok: true }, { status: 200 });
+    } else if (mode === "supabase") {
       await deliverViaSupabase({ email, name: name || undefined, message });
     } else if (mode === "resend") {
       await deliverViaResend({ email, name: name || undefined, message });
     } else {
-      // Auto mode: prefer Resend if configured, otherwise Supabase.
+      // Auto mode: prefer Resend if key exists, otherwise Supabase
       if (process.env.RESEND_API_KEY) {
         await deliverViaResend({ email, name: name || undefined, message });
       } else if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         await deliverViaSupabase({ email, name: name || undefined, message });
       } else {
-        throw new Error("No delivery configured.");
+        throw new Error("No delivery service configured.");
       }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    // Avoid leaking sensitive details to client.
+    // Avoid leaking stack traces or internal errors to client
     console.error("Support form delivery failed", err);
     return NextResponse.json(
       { error: "Unable to send message right now. Please try again later." },
@@ -174,5 +292,3 @@ export async function POST(req: Request) {
     );
   }
 }
-
-
